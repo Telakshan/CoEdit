@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CoEditAPI/CoEditAPI.csproj" />
+    <Project Path="src/CoEdit.SharedKernel/CoEdit.SharedKernel.csproj" />
+    <Folder Name="CoEdit.Modules">
+      <Folder Name="Collaboration">
+        <Project Path="src/CoEdit.Modules/Collaboration/CoEdit.Modules.Collaboration/CoEdit.Modules.Collaboration.csproj" />
+      </Folder>
+    </Folder>
+  </Folder>
+</Solution>
