@@ -1,6 +1,6 @@
 using System;
 
-namespace CoEdit.SharedKernel;
+namespace CoEdit.Shared.Kernel;
 
 public class Entity<TId> : IAuditableEntity
 {

@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Threading.Tasks;
 
-namespace CoEdit.SharedKernel.Contracts;
+namespace CoEdit.Shared.Kernel.Contracts;
 
 public interface IHistoryService
 {

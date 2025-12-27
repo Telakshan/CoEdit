@@ -1,4 +1,4 @@
-namespace CoEdit.SharedKernel;
+namespace CoEdit.Shared.Kernel;
 
 public interface IAuditableEntity
 {
