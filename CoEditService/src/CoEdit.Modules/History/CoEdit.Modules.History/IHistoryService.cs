@@ -1,7 +1,12 @@
 ﻿namespace CoEdit.Modules.History;
 public interface IHistoryService
 {
-    Task SaveDeltasAsync(IEnumerable<DocumentDeltaDto> deltas);
+    Task SaveHistoryAsync(string documentId, List<string> history);
 }
 
-public record DocumentDeltaDto(Guid DocumentId, string Delta, DateTime Timestamp);
+public class DocumentEntity
+{
+    public string Id { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string LastUpdated { get; set;}
+}
