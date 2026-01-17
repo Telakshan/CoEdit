@@ -7,23 +7,24 @@
     </Folder>
     <Project Path="src/CoEditAPI/CoEditAPI.csproj" />
   </Folder>
-  <Folder Name="/src/CoEdit.Modules/" />
-  <Folder Name="/src/CoEdit.Modules/Collaboration/">
-    <Project Path="src/CoEdit.Modules/Collaboration/CoEdit.Modules.Collaboration/CoEdit.Modules.Collaboration.csproj" />
-  </Folder>
-  <Folder Name="/src/CoEdit.Modules/Documents/">
-    <Project Path="src/CoEdit.Modules/Documents/CoEdit.Modules.Documents/CoEdit.Modules.Documents.csproj" Id="6a2ca6a6-fec0-4535-9c92-592ba41ad15c" />
-  </Folder>
-  <Folder Name="/src/CoEdit.Modules/History/">
-    <Project Path="src/CoEdit.Modules/History/CoEdit.Modules.History/CoEdit.Modules.History.csproj" Id="ae423af2-8ce6-46a9-9470-ee23e668868d" />
-  </Folder>
-  <Folder Name="/src/CoEdit.Modules/Permissions/">
-    <Project Path="src/CoEdit.Modules/Permissions/CoEdit.Modules.Permissions/CoEdit.Modules.Permissions.csproj" Id="190a6362-0d52-40fd-beb3-9d4e60a94116" />
-  </Folder>
-  <Folder Name="/src/CoEdit.Modules/Users/">
-    <Project Path="src/CoEdit.Modules/User/CoEdit.Modules.Users/CoEdit.Modules.Users.csproj" Id="a0313679-c53d-4241-81b9-5418c954f014" />
-  </Folder>
   <Folder Name="/src/CoEdit.Shared.Kernel/">
     <Project Path="src/CoEdit.SharedKernel/CoEdit.Shared.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Collaboration/">
+    <Project Path="src\CoEdit.Modules\Collaboration\Collaboration.Infrastructure\Collaboration.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Documents/">
+    <Project Path="src\CoEdit.Modules\Documents\Documents.Infrastructure\Documents.Infrastructure.csproj" Id="6a2ca6a6-fec0-4535-9c92-592ba41ad15c" />
+  </Folder>
+  <Folder Name="/src/Modules/History/">
+    <Project Path="src/History.Domain/History.Domain.csproj" />
+    <Project Path="src\CoEdit.Modules\History\History.Infrastructure\History.Infrastructure.csproj" Id="ae423af2-8ce6-46a9-9470-ee23e668868d" />
+  </Folder>
+  <Folder Name="/src/Modules/Permissions/">
+    <Project Path="src\CoEdit.Modules\Permissions\Permissions.Infrastructure\Permissions.Infrastructure.csproj" Id="190a6362-0d52-40fd-beb3-9d4e60a94116" />
+  </Folder>
+  <Folder Name="/src/Modules/Users/">
+    <Project Path="src/CoEdit.Modules/User/CoEdit.Modules.Users/CoEdit.Modules.Users.csproj" Id="a0313679-c53d-4241-81b9-5418c954f014" />
   </Folder>
 </Solution>
