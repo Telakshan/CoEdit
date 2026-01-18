@@ -1,4 +1,4 @@
-namespace CoEdit.Shared.Kernel;
+namespace CoEdit.Shared.Kernel.Abstractions;
 
 public interface IAuditableEntity
 {

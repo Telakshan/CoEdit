@@ -1,4 +1,4 @@
-using CoEdit.Shared.Kernel.Common;
+using CoEdit.Shared.Kernel.Abstractions;
 
 namespace User.Domain.Exceptions;
 

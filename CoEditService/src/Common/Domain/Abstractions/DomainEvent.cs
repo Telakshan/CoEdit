@@ -1,6 +1,4 @@
-using CoEdit.Shared.Kernel.Abstractions;
-
-namespace CoEdit.Shared.Kernel.Common;
+namespace CoEdit.Shared.Kernel.Abstractions;
 
 public class DomainEvent: IDomainEvent
 {

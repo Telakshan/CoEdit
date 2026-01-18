@@ -1,4 +1,4 @@
-namespace CoEdit.Shared.Kernel.Common;
+namespace CoEdit.Shared.Kernel.Abstractions;
 
 public class DomainException: Exception
 {
