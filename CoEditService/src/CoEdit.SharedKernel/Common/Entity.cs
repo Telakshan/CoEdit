@@ -1,12 +1,18 @@
-using System;
+namespace CoEdit.Shared.Kernel.Common;
 
-namespace CoEdit.Shared.Kernel;
-
-public class Entity<TId> : IAuditableEntity
+public abstract class Entity
 {
-    public TId Id { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public string? CreatedBy { get; set; }
-    public string? UpdatedBy { get; set; }
+    private readonly List<IDomainEvent> _domainEvents = [];
+
+    protected Entity() 
+    {
+    }
+    
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.ToList();
+    public void ClearDomainEvents() => _domainEvents.Clear();
+
+    protected void Raise(IDomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
 }
