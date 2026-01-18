@@ -1,19 +1,21 @@
+using CoEdit.Shared.Kernel.Abstractions;
+
 namespace CoEdit.Shared.Kernel.Common;
 
 public class DomainEvent: IDomainEvent
 {
     protected DomainEvent()
     {
-        Id = Guid.NewGuid();
+        EventId = Guid.NewGuid();
         OccuredOnUtc = DateTime.UtcNow;
     }
 
     protected DomainEvent(Guid id, DateTime occuredOnUtc)
     {
-        Id = id;
+        EventId = id;
         OccuredOnUtc = occuredOnUtc;
     }
     
-    public Guid Id { get; init; }
+    public Guid EventId { get; }
     public DateTime OccuredOnUtc { get; init; }
 }

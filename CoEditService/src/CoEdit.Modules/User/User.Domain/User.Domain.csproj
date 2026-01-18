@@ -7,10 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Abstractions\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\..\..\CoEdit.SharedKernel\CoEdit.Shared.Kernel.csproj" />
     </ItemGroup>
 

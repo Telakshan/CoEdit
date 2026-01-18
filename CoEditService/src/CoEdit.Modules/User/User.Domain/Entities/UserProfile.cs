@@ -15,6 +15,7 @@ public class UserProfile: Entity<Guid>
     {
         Id = id;
         DisplayName = displayName;
+        
         AvatarUrl = avatarUrl;
         TimeZone = timeZone;
         Preferences = preferences;

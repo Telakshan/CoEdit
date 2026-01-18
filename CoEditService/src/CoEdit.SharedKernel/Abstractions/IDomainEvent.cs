@@ -1,7 +1,9 @@
-namespace CoEdit.Shared.Kernel.Common;
+using MediatR;
 
-public interface IDomainEvent
+namespace CoEdit.Shared.Kernel.Abstractions;
+
+public interface IDomainEvent: INotification
 {
-     Guid Id { get; }
+     Guid EventId { get; }
      DateTime OccuredOnUtc { get; }
 }
