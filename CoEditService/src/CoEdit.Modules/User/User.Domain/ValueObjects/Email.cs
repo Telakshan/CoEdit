@@ -4,11 +4,14 @@ namespace User.Domain.ValueObjects;
 
 public class Email
 {
+    public string Value { get; private set; }
+
     private Email(string value)
     {
+        Value = value;
     }
 
-    public static new Email Create(string email)
+    public static Email Create(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
         {
