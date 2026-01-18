@@ -1,4 +1,4 @@
-namespace History.Domain;
+namespace CoEdit.Modules.History;
 
 public interface IHistoryRepository
 {

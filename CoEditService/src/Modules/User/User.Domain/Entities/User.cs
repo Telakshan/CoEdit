@@ -1,5 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-using CoEdit.Shared.Kernel.Common;
+using CoEdit.Shared.Kernel.Abstractions;
 using User.Domain.Abstractions;
 using User.Domain.Events;
 using User.Domain.Exceptions;

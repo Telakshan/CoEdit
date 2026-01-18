@@ -1,4 +1,4 @@
-namespace CoEdit.Shared.Kernel;
+namespace CoEdit.Shared.Kernel.Abstractions;
 
 public readonly struct Result<T>
 {
