@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Common/">
+    <Project Path="src/Common/Infrastructure/CoEdit.Common.Infrastructure/CoEdit.Common.Infrastructure.csproj" />
     <Project Path="src\Common\Domain\CoEdit.Common.Domain.csproj" />
   </Folder>
   <Folder Name="/Modules/">
@@ -21,6 +22,16 @@
       <Project Path="src\Modules\User\User.Domain\User.Domain.csproj" />
       <Project Path="src\Modules\User\User.Infrastructure\User.Infrastructure.csproj" Id="a0313679-c53d-4241-81b9-5418c954f014" />
     </Folder>
+  </Folder>
+  <Folder Name="/Modules/Collaborate/" />
+  <Folder Name="/Modules/Documents/" />
+  <Folder Name="/Modules/Permissions/">
+    <Project Path="src/Modules/Permissions/Permissions.Infrastructure/Permissions.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/User/">
+    <Project Path="src/Modules/User/User.Application/User.Application.csproj" />
+    <Project Path="src/Modules/User/User.Domain/User.Domain.csproj" />
+    <Project Path="src/Modules/User/User.Infrastructure/User.Infrastructure.csproj" />
   </Folder>
   <Project Path="src\CoEditAPI\CoEditAPI.csproj" />
 </Solution>
