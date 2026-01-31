@@ -16,8 +16,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\..\History.Domain\History.Domain.csproj" />
-	  <ProjectReference Include="..\..\History\History.Infrastructure\History.Infrastructure.csproj" />
+	  <ProjectReference Include="../../../Modules/History/History.Domain/History.Domain.csproj" />
+	  <ProjectReference Include="../../History/History.Infrastructure/History.Infrastructure.csproj" />
 	</ItemGroup>
 	
 

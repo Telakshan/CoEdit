@@ -1,26 +1,26 @@
 <Solution>
-  <Folder Name="/Common/">
-    <Project Path="src\Common\Domain\CoEdit.Common.Domain.csproj" />
+  <Folder Name="/src/" />
+  <Folder Name="/src/Common/">
+    <Project Path="src/Common/Domain/CoEdit.Common.Domain.csproj" />
   </Folder>
-  <Folder Name="/Modules/">
-    <Folder Name="Collaboration">
-      <Project Path="src\Modules\Collaboration.Infrastructure\Collaboration.Infrastructure.csproj" />
-    </Folder>
-    <Folder Name="Documents">
-      <Project Path="src\Modules\Documents\Documents.Infrastructure\Documents.Infrastructure.csproj" Id="6a2ca6a6-fec0-4535-9c92-592ba41ad15c" />
-    </Folder>
-    <Folder Name="History">
-      <Project Path="src\Modules\History\History.Domain\History.Domain.csproj" />
-      <Project Path="src\Modules\History\History.Infrastructure\History.Infrastructure.csproj" Id="ae423af2-8ce6-46a9-9470-ee23e668868d" />
-    </Folder>
-    <Folder Name="Permissions">
-      <Project Path="src\Modules\Permissions\Permissions.Infrastructure\Permissions.Infrastructure.csproj" Id="190a6362-0d52-40fd-beb3-9d4e60a94116" />
-    </Folder>
-    <Folder Name="Users">
-      <Project Path="src\Modules\User\User.Application\User.Application.csproj" />
-      <Project Path="src\Modules\User\User.Domain\User.Domain.csproj" />
-      <Project Path="src\Modules\User\User.Infrastructure\User.Infrastructure.csproj" Id="a0313679-c53d-4241-81b9-5418c954f014" />
-    </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Collaboration/">
+    <Project Path="src/Modules/Collaboration/Collaboration.Infrastructure/Collaboration.Infrastructure.csproj" />
   </Folder>
-  <Project Path="src\CoEditAPI\CoEditAPI.csproj" />
+  <Folder Name="/src/Modules/Documents/">
+    <Project Path="src/Modules/Documents/Documents.Infrastructure/Documents.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/History/">
+    <Project Path="src/Modules/History/History.Domain/History.Domain.csproj" />
+    <Project Path="src/Modules/History/History.Infrastructure/History.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Permissions/">
+    <Project Path="src/Modules/Permissions/Permissions.Infrastructure/Permissions.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Users/">
+    <Project Path="src/Modules/User/User.Application/User.Application.csproj" />
+    <Project Path="src/Modules/User/User.Domain/User.Domain.csproj" />
+    <Project Path="src/Modules/User/User.Infrastructure/User.Infrastructure.csproj" />
+  </Folder>
+  <Project Path="src/CoEditAPI/CoEditAPI.csproj" />
 </Solution>
