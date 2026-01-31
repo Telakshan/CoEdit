@@ -1,10 +1,5 @@
-using CoEdit.Shared.Kernel.Abstractions;
+using CoEdit.Common.Domain.Exception;
 
 namespace User.Domain.Exceptions;
 
-public class UserDomainException: DomainException
-{
-    public UserDomainException(string message) : base(message)
-    {
-    }
-}
+public class UserDomainException(string message) : DomainException(message);

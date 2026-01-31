@@ -1,4 +1,4 @@
-namespace CoEdit.Shared.Kernel.Abstractions;
+namespace CoEdit.Common.Domain.Abstractions;
 
 public abstract class ValueObject : IEquatable<ValueObject>
 {

@@ -1,27 +1,14 @@
-using CoEdit.Shared.Kernel.Abstractions;
+using CoEdit.Common.Domain.Abstractions;
 
 namespace User.Domain.Events;
 
-public record UserRegisteredDomainEvent(Guid UserId, string Email, Guid EventId, DateTime OccuredOnUtc): IDomainEvent
+public abstract record DomainEvent : IDomainEvent
 {
-    public Guid EventId { get; } = EventId;
-    public DateTime OccuredOnUtc { get; } = OccuredOnUtc;
+    public Guid EventId { get; } = Guid.NewGuid();
+    public DateTime OccurredOnUtc { get; } = DateTime.UtcNow;
 }
 
-public record EmailVerificationDomainEvent(Guid UserId, Guid EventId, DateTime OccuredOnUtc): IDomainEvent
-{
-    public Guid EventId { get; } = EventId;
-    public DateTime OccuredOnUtc { get; } = OccuredOnUtc;
-}
-
-public record PasswordChangedDomainEvent(Guid UserId, Guid EventId, DateTime OccuredOnUtc): IDomainEvent
-{
-    public Guid EventId { get; } = EventId;
-    public DateTime OccuredOnUtc { get; } = OccuredOnUtc;
-}
-
-public record UserDeactivatedDomainEvent(Guid UserId, Guid EventId, DateTime OccuredOnUtc): IDomainEvent
-{
-    public Guid EventId { get; } = EventId;
-    public DateTime OccuredOnUtc { get; } = OccuredOnUtc;
-}
+public record UserRegisteredDomainEvent(Guid UserId, string Email) : DomainEvent;
+public record EmailVerifiedDomainEvent(Guid UserId) : DomainEvent;
+public record PasswordChangedDomainEvent(Guid UserId) : DomainEvent;
+public record UserDeactivatedDomainEvent(Guid UserId) : DomainEvent;

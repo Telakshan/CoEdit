@@ -1,8 +1,8 @@
-using CoEdit.Shared.Kernel.Abstractions;
+using CoEdit.Common.Domain.Abstractions;
 
 namespace User.Domain.Entities;
 
-public class UserProfile: Entity<Guid>
+public class UserProfile: Entity
 {
     public string DisplayName { get; private set; }
     public string? AvatarUrl { get; private set; }
@@ -23,12 +23,7 @@ public class UserProfile: Entity<Guid>
 
     public static UserProfile Create(Guid id, string displayName, string? avatarUrl = null)
     {
-        if (string.IsNullOrWhiteSpace(displayName))
-        {
-            throw new ArgumentException("Display name cannot be empty");
-        }
-
-        return new UserProfile(id, displayName, avatarUrl, null, null);
+        return string.IsNullOrWhiteSpace(displayName) ? throw new ArgumentException("Display name cannot be empty") : new UserProfile(id, displayName, avatarUrl, null, null);
     }
 
     public void Update(string displayName, string? avatarUrl, string timeZone, string? preferences)

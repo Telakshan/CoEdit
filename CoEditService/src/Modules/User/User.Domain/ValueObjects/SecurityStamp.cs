@@ -1,10 +1,10 @@
-using CoEdit.Shared.Kernel.Abstractions;
+using CoEdit.Common.Domain.Abstractions;
 
 namespace User.Domain.ValueObjects;
 
 public class SecurityStamp: ValueObject
 {
-    public Guid Value { get; }
+    private Guid Value { get; }
 
     private SecurityStamp(Guid value)
     {
@@ -18,11 +18,7 @@ public class SecurityStamp: ValueObject
 
     public static SecurityStamp From(Guid value)
     {
-        if (value == Guid.Empty)
-        {
-            throw new ArgumentException("Security stamp cannot be empty.");
-        }
-        return new SecurityStamp(value);
+        return value == Guid.Empty ? throw new ArgumentException("Security stamp cannot be empty.") : new SecurityStamp(value);
     }
 
     public override IEnumerable<object> GetEqualityComponents()

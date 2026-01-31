@@ -1,7 +1,14 @@
 <Solution>
   <Folder Name="/src/" />
-  <Folder Name="/src/Common/">
+  <Folder Name="/src/Common/" />
+  <Folder Name="/src/Common/Application/">
+    <Project Path="src/Common/Application/CoEdit.Common.Application/CoEdit.Common.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Common/Domain/">
     <Project Path="src/Common/Domain/CoEdit.Common.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Common/Infrastructure/">
+    <Project Path="src/Common/CoEdit.Common.Infrastructure/CoEdit.Common.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
   <Folder Name="/src/Modules/Collaboration/">
