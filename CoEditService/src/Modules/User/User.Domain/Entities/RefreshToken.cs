@@ -1,8 +1,8 @@
-using CoEdit.Shared.Kernel.Abstractions;
+using CoEdit.Common.Domain.Abstractions;
 
 namespace User.Domain.Entities;
 
-public class RefreshToken: Entity<Guid>
+public class RefreshToken: AggregateRoot
 {
     public string Token { get; private set; }
     public Guid UserId { get; private set; }
@@ -29,12 +29,7 @@ public class RefreshToken: Entity<Guid>
             throw new ArgumentException("Token cannot be empty");
         }
 
-        if (userId == Guid.Empty)
-        {
-            throw new ArgumentException("User ID cannot be empty");
-        }
-
-        return new RefreshToken(token, userId, expiresAt);
+        return userId == Guid.Empty ? throw new ArgumentException("User ID cannot be empty") : new RefreshToken(token, userId, expiresAt);
     }
     
     public void Revoke()

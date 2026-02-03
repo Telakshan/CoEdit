@@ -1,4 +1,4 @@
-using CoEdit.Shared.Kernel.Abstractions;
+using CoEdit.Common.Domain.Abstractions;
 using User.Domain.Abstractions;
 
 namespace User.Domain.ValueObjects;
@@ -30,11 +30,7 @@ public class Password: ValueObject
     
     public static Password FromHash(string hash)
     {
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new ArgumentException("Password hash cannot be empty.");
-        }
-        return new Password(hash);
+        return string.IsNullOrWhiteSpace(hash) ? throw new ArgumentException("Password hash cannot be empty.") : new Password(hash);
     }
     
     public bool Verify(string plainPassword, IPasswordHasher passwordHasher)

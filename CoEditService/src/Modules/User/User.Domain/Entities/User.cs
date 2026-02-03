@@ -1,4 +1,4 @@
-using CoEdit.Shared.Kernel.Abstractions;
+using CoEdit.Common.Domain.Abstractions;
 using User.Domain.Abstractions;
 using User.Domain.Events;
 using User.Domain.Exceptions;
@@ -6,42 +6,48 @@ using User.Domain.ValueObjects;
 
 namespace User.Domain.Entities;
 
-public class User: Entity<Guid>
+public class User: AggregateRoot
 {
     public Email Email { get; private set; }
-    private Password PasswordHash { get; set; }
+    public Password PasswordHash { get; private set; }
     public SecurityStamp SecurityStamp { get; private set; }
-    private bool IsEmailVerified { get; set; }
-    private string? EmailVerificationToken { get; set; }
-    private DateTime? EmailVerificationTokenExpiresAt { get; set; }
-    private bool IsActive { get; set; }
+    public bool IsEmailVerified { get; private set; }
+    public string? EmailVerificationToken { get; private set; }
+    public DateTime? EmailVerificationTokenExpiresAt { get; private set; }
+    public bool IsActive { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
 
-    private UserProfile Profile { get; set;  }
-    
-    private User(){}
+    public UserProfile Profile { get; private set; }
+
+    // Constructor for EF Core
+    private User() { }
 
     private User(Email email, Password password, string verificationToken, DateTime createdAt)
     {
+        Id = Guid.NewGuid();
         Email = email;
         PasswordHash = password;
         SecurityStamp = SecurityStamp.Create();
         IsEmailVerified = false;
         EmailVerificationToken = verificationToken;
-        EmailVerificationTokenExpiresAt = createdAt.AddDays(1);
+        EmailVerificationTokenExpiresAt = createdAt.AddDays(1); // Default expiration
         IsActive = true;
         CreatedAt = createdAt;
 
+        // Default profile
         Profile = UserProfile.Create(Id, email.Value.Split('@')[0]);
 
-        Raise(new UserRegisteredDomainEvent(Id, email.Value, Guid.NewGuid(), CreatedAt));
+        AddDomainEvent(new UserRegisteredDomainEvent(Id, Email.Value));
     }
 
     public static User Register(string email, string password, IPasswordHasher passwordHasher)
     {
-        var emailValueObject = Email.Create(email);
-        var passwordValueObject = Password.Create(password, passwordHasher);
+        var emailVo = Email.Create(email);
+        var passwordVo = Password.Create(password, passwordHasher);
+        // Generate a simple token for verification. In production, consider a more robust generation.
         var token = Guid.NewGuid().ToString("N");
-        return new User(emailValueObject, passwordValueObject, token, DateTime.UtcNow);
+        return new User(emailVo, passwordVo, token, DateTime.UtcNow);
     }
 
     public void VerifyEmail(string token)
@@ -62,39 +68,39 @@ public class User: Entity<Guid>
         EmailVerificationToken = null;
         EmailVerificationTokenExpiresAt = null;
         UpdatedAt = DateTime.UtcNow;
-        Raise(new EmailVerificationDomainEvent(Id, Guid.NewGuid(), UpdatedAt));
+        AddDomainEvent(new EmailVerifiedDomainEvent(Id));
     }
 
-    public void ChangePassword(string  currentPassword, string newPassword, IPasswordHasher passwordHasher)
+    public void ChangePassword(string currentPassword, string newPassword, IPasswordHasher passwordHasher)
     {
         if (!IsEmailVerified)
         {
-            throw new UserDomainException("Cannot change password for unverified email");
+            throw new UserDomainException("Cannot change password without email verification.");
         }
 
         if (!PasswordHash.Verify(currentPassword, passwordHasher))
         {
-            throw new UserDomainException("Invalid current password");
+            throw new UserDomainException("Invalid current password.");
         }
 
         PasswordHash = Password.Create(newPassword, passwordHasher);
-        SecurityStamp = SecurityStamp.Create();
+        SecurityStamp = SecurityStamp.Create(); // Rotate security stamp
         UpdatedAt = DateTime.UtcNow;
-        Raise(new PasswordChangedDomainEvent(Id, Guid.NewGuid(), UpdatedAt));
+        AddDomainEvent(new PasswordChangedDomainEvent(Id));
     }
 
     public void UpdateProfile(string displayName, string? avatarUrl, string? timeZone, string? preferences)
     {
-        if (timeZone != null) Profile.Update(displayName, avatarUrl, timeZone, preferences);
+        Profile.Update(displayName, avatarUrl, timeZone, preferences);
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void Deactivate()
     {
-        if(!IsActive) return;
+        if (!IsActive) return;
         IsActive = false;
         UpdatedAt = DateTime.UtcNow;
-        Raise(new UserDeactivatedDomainEvent(Id, Guid.NewGuid(), UpdatedAt));
+        AddDomainEvent(new UserDeactivatedDomainEvent(Id));
     }
 
     public void Reactivate()

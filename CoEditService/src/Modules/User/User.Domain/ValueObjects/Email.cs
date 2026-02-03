@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace User.Domain.ValueObjects;
 
-public class Email
+public partial class Email
 {
     public string Value { get; private set; }
 
@@ -18,12 +18,9 @@ public class Email
             throw new ArgumentException("Email cannot be empty");
         }
 
-        if (!Regex.IsMatch(email,  @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-        {
-            throw new ArgumentException("Invalid email format!");
-        }
-
-        return new Email(email);
+        return !MyRegex().IsMatch(email) ? throw new ArgumentException("Invalid email format!") : new Email(email);
     }
 
+    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
+    private static partial Regex MyRegex();
 }

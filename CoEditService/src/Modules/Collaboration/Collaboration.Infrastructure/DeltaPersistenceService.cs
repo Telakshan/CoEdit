@@ -1,8 +1,5 @@
-using System;
-using System.Threading;
 using Microsoft.Extensions.Hosting;
-using System.Threading.Tasks;
-using History.Domain;
+using CoEdit.Modules.History;
 using Microsoft.Extensions.Logging;
 
 namespace CoEdit.Modules.Collaboration;

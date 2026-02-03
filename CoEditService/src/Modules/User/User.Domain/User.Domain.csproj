@@ -7,11 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Common\Domain\CoEdit.Common.Domain.csproj" />
+      <ProjectReference Include="../../../Common/Domain/CoEdit.Common.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Specifications\" />
+      <Folder Include="Specifications/" />
     </ItemGroup>
 
 </Project>
