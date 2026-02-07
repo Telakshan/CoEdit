@@ -1,4 +1,5 @@
 using CoEdit.Common.Domain.Abstractions;
+using CoEdit.Common.Domain.Shared;
 
 namespace User.Domain.Entities;
 
@@ -26,10 +27,10 @@ public class RefreshToken: AggregateRoot
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            throw new ArgumentException("Token cannot be empty");
+            throw new ArgumentException("Token cannot be empty", nameof(token));
         }
 
-        return userId == Guid.Empty ? throw new ArgumentException("User ID cannot be empty") : new RefreshToken(token, userId, expiresAt);
+        return userId == Guid.Empty ? throw new ArgumentException("User ID cannot be empty", nameof(userId)) : new RefreshToken(token, userId, expiresAt);
     }
     
     public void Revoke()

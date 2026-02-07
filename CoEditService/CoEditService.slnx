@@ -13,6 +13,7 @@
   <Folder Name="/src/Modules/" />
   <Folder Name="/src/Modules/Collaboration/">
     <Project Path="src/Modules/Collaboration/Collaboration.Infrastructure/Collaboration.Infrastructure.csproj" />
+    <Project Path="src\Modules\Collaboration\Collaboration.Domain\Collaboration.Domain.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Documents/">
     <Project Path="src/Modules/Documents/Documents.Infrastructure/Documents.Infrastructure.csproj" />
