@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\..\Modules\Collaboration\Collaboration.Domain\Collaboration.Domain.csproj" />
         <ProjectReference Include="..\..\Domain\CoEdit.Common.Domain.csproj"/>
     </ItemGroup>
 

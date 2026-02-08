@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR" Version="14.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
   </ItemGroup>
 
@@ -18,7 +19,8 @@
 	<ItemGroup>
 	  <ProjectReference Include="../../../Modules/History/History.Domain/History.Domain.csproj" />
 	  <ProjectReference Include="../../History/History.Infrastructure/History.Infrastructure.csproj" />
+	  <ProjectReference Include="..\..\..\Common\Application\CoEdit.Common.Application\CoEdit.Common.Application.csproj" />
+	  <ProjectReference Include="..\Collaboration.Application\Collaboration.Application.csproj" />
+	  <ProjectReference Include="..\Collaboration.Domain\Collaboration.Domain.csproj" />
 	</ItemGroup>
-	
-
 </Project>
