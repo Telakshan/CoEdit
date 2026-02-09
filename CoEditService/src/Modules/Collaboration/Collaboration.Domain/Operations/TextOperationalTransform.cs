@@ -1,9 +1,9 @@
-using Collaboration.Core.Entities;
-using Collaboration.Core.ValueObjects;
+using Collaboration.Domain.Entities;
+using Collaboration.Domain.ValueObjects;
 
-namespace Collaboration.Core.Operations;
+namespace Collaboration.Domain.Operations;
 
-public class TextOperationalTransform: IOperationTransform
+public class TextOperationalTransform: IOperationalTransform
 {
     public Operation Transform(Operation op1, Operation op2, OperationPriority priority)
     {

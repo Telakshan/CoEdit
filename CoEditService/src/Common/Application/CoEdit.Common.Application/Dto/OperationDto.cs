@@ -1,4 +1,4 @@
-using Collaboration.Core.Entities;
+using Collaboration.Domain.Entities;
 
 namespace CoEdit.Common.Application.Dto;
 

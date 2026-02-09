@@ -1,4 +1,4 @@
-namespace Collaboration.Core.Entities;
+namespace Collaboration.Domain.Entities;
 
 public class Operation
 {

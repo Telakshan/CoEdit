@@ -38,8 +38,8 @@ public abstract class BaseDbContext(DbContextOptions options, IPublisher publish
 
         var outboxMessages = domainEvents.Select(domainEvent => new OutboxMessage
         {
-            Id = domainEvent.EventId,
-            OccurredAt = domainEvent.OccurredOnUtc,
+            Id = domainEvent.Id,
+            OccurredAt = domainEvent.OccuredOnUtc,
             Type = domainEvent.GetType().Name,
             Content = JsonSerializer.Serialize(domainEvent, domainEvent.GetType(), (JsonSerializerOptions?)null),
             AssemblyQualifiedName = domainEvent.GetType().AssemblyQualifiedName

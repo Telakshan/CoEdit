@@ -2,13 +2,23 @@ using CoEdit.Common.Domain.Abstractions;
 
 namespace User.Domain.Events;
 
-public abstract record DomainEvent : IDomainEvent
+public class UserRegisteredDomainEvent(Guid userId, string email) : DomainEvent
 {
-    public Guid EventId { get; } = Guid.NewGuid();
-    public DateTime OccurredOnUtc { get; } = DateTime.UtcNow;
+    public Guid UserId { get; init; } = userId;
+    public string Email { get; init; } = email;
 }
 
-public record UserRegisteredDomainEvent(Guid UserId, string Email) : DomainEvent;
-public record EmailVerifiedDomainEvent(Guid UserId) : DomainEvent;
-public record PasswordChangedDomainEvent(Guid UserId) : DomainEvent;
-public record UserDeactivatedDomainEvent(Guid UserId) : DomainEvent;
+public class EmailVerifiedDomainEvent(Guid userId) : DomainEvent
+{
+    public Guid UserId { get; init; } = userId;
+}
+
+public class PasswordChangedDomainEvent(Guid userId) : DomainEvent
+{
+    public Guid UserId { get; init; } = userId;
+}
+
+public class UserDeactivatedDomainEvent(Guid userId) : DomainEvent
+{
+    public Guid UserId { get; init; } = userId;
+}

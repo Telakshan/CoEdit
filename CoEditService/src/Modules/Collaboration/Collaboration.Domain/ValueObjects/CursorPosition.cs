@@ -1,4 +1,4 @@
-namespace Collaboration.Core.ValueObjects;
+namespace Collaboration.Domain.ValueObjects;
 
 public class CursorPosition
 {

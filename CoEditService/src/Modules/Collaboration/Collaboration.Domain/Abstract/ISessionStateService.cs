@@ -1,6 +1,6 @@
-using Collaboration.Core.Entities;
+using Collaboration.Domain.Entities;
 
-namespace Collaboration.Core.Abstract;
+namespace Collaboration.Domain.Abstract;
 
 public interface ISessionStateService
 {

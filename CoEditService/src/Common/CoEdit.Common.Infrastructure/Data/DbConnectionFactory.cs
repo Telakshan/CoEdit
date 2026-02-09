@@ -1,8 +1,13 @@
 using System.Data.Common;
+using CoEdit.Common.Application.Data;
+using Npgsql;
 
 namespace CoEdit.Common.Infrastructure.Data;
 
-public interface IDbConnectionFactory
+public sealed class DbConnectionFactory(NpgsqlDataSource dataSource) : IDbConnectionFactory
 {
-    ValueTask<DbConnection> OpenConnectionAsync();
+    public async ValueTask<DbConnection> OpenConnectionAsync()
+    {
+        return await dataSource.OpenConnectionAsync();
+    }
 }

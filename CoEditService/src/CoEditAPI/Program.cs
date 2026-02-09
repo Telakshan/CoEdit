@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Collaboration.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +11,8 @@ builder.Services.AddEndpointsApiExplorer();
 
 //Swagger
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddCollaborationModule(builder.Configuration);
 
 var app = builder.Build();
 

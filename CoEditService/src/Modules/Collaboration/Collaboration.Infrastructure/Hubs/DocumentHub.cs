@@ -1,35 +1,24 @@
 using System.Diagnostics.CodeAnalysis;
-using Collaboration.Application.Services;
-using Collaboration.Core.Abstract;
-using Collaboration.Core.Entities;
-using Collaboration.Core.Operations;
-using MediatR;
-using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 using CoEdit.Common.Application.Dto;
 using CoEdit.Common.Application.IntegrationEvents;
+using Collaboration.Application.Services;
+using Collaboration.Domain.Abstract;
+using Collaboration.Domain.Entities;
+using Collaboration.Domain.Operations;
+using MediatR;
+using Microsoft.AspNetCore.SignalR;
 
-namespace CoEdit.Modules.Collaboration.Hubs;
+namespace Collaboration.Infrastructure.Hubs;
 
 [ExcludeFromCodeCoverage(Justification = "SignalR hub with group management and broadcasting;")]
-public class DocumentHub: Hub
+public class DocumentHub(
+    ISessionStateService sessionStateService,
+    IOperationalTransform operationTransform,
+    IPublisher publisher,
+    IDistributedLockService lockService)
+    : Hub
 {
-    private readonly ISessionStateService _sessionStateService;
-    private readonly IOperationTransform _operationTransform;
-    private readonly IPublisher _publisher;
-    private readonly IDistributedLockService _lockService;
-
-    public DocumentHub(ISessionStateService sessionStateService,
-        IOperationTransform operationTransform,
-        IPublisher publisher,
-        IDistributedLockService lockService)
-    {
-        _sessionStateService = sessionStateService;
-        _operationTransform = operationTransform;
-        _publisher = publisher;
-        _lockService = lockService;
-    }
-
     public async Task JoinDocument(Guid documentId)
     {
         var userIdString = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -44,7 +33,7 @@ public class DocumentHub: Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
         
         var session = new EditSession(documentId, userId, groupName);
-        await _sessionStateService.AddSessionAsync(session);
+        await sessionStateService.AddSessionAsync(session);
 
         await Clients.Group(groupName).SendAsync(
             "UserJoined",
@@ -56,14 +45,14 @@ public class DocumentHub: Hub
                 JoinedAt = session.JoinedAt
             });
 
-        await _publisher.Publish(new UserJoinedDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
+        await publisher.Publish(new UserJoinedDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
     }
 
     public async Task LeaveDocument(Guid documentId)
     {
         var groupName = documentId.ToString();
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-        await _sessionStateService.RemoveSessionAsync(documentId, Context.ConnectionId);
+        await sessionStateService.RemoveSessionAsync(documentId, Context.ConnectionId);
         
         var userIdString = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         Guid userId = Guid.Empty;
@@ -81,7 +70,7 @@ public class DocumentHub: Hub
                     UserId = userId 
                 });
         
-        await _publisher.Publish(new UserLeftDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
+        await publisher.Publish(new UserLeftDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
     }
     
     public async Task SendOperation(Guid documentId, OperationDto operationDto)
@@ -89,7 +78,7 @@ public class DocumentHub: Hub
         IAsyncDisposable? lockHandle = null;
         for (int i = 0; i < 5; i++)
         {
-            lockHandle = await _lockService.AcquireLockAsync(documentId.ToString(), TimeSpan.FromSeconds(5));
+            lockHandle = await lockService.AcquireLockAsync(documentId.ToString(), TimeSpan.FromSeconds(5));
             if (lockHandle != null) break;
             await Task.Delay(50);
         }
@@ -99,20 +88,20 @@ public class DocumentHub: Hub
 
         try
         {
-            var currentVersion = await _sessionStateService.GetVersionAsync(documentId);
+            var currentVersion = await sessionStateService.GetVersionAsync(documentId);
             var op = operationDto.ToEntity();
 
             if (op.Version <= currentVersion)
             {
-                var missedOps = await _sessionStateService.GetOperationsAfterVersionAsync(documentId, op.Version);
-                var transformedOps = _operationTransform.TransformAgainstConcurrent(op, missedOps);
+                var missedOps = await sessionStateService.GetOperationsAfterVersionAsync(documentId, op.Version);
+                var transformedOps = operationTransform.TransformAgainstConcurrent(op, missedOps);
                 op = transformedOps.First();
             }
 
-            var newVersion = await _sessionStateService.IncrementVersionAsync(documentId);
+            var newVersion = await sessionStateService.IncrementVersionAsync(documentId);
             op.Version = (int)newVersion;
 
-            await _sessionStateService.AddOperationAsync(op);
+            await sessionStateService.AddOperationAsync(op);
 
             await Clients.Group(documentId.ToString()).SendAsync("ReceiveOperation", op);
         }

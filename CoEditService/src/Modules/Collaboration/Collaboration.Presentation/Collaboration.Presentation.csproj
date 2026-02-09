@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.AspNetCore.Routing">
+        <HintPath>..\..\..\..\..\..\..\.nuget\packages\microsoft.aspnetcore.app.ref\10.0.0\ref\net10.0\Microsoft.AspNetCore.Routing.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Collaboration.Infrastructure\Collaboration.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>
