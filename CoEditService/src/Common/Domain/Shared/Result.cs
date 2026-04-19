@@ -2,26 +2,36 @@ namespace CoEdit.Common.Domain.Shared;
 
 public class Result
 {
+    private static readonly IReadOnlyDictionary<string, string[]> EmptyErrors =
+        new Dictionary<string, string[]>();
+
     public bool IsSuccess { get; }
     public bool IsFailure => !IsSuccess;
-    public Error Error { get; }
+    public string Error { get; }
+    public IReadOnlyDictionary<string, string[]> Errors { get; }
 
-    protected Result(bool isSuccess, Error error)
+    protected Result(bool isSuccess, string error, IReadOnlyDictionary<string, string[]>? errors = null)
     {
-        if (isSuccess && error != Error.None)
+        var normalizedErrors = errors is { Count: > 0 } ? errors : EmptyErrors;
+
+        if (isSuccess && (error != string.Empty || normalizedErrors.Count > 0))
             throw new InvalidOperationException();
-        if (!isSuccess && error == Error.None)
+        if (!isSuccess && error == string.Empty && normalizedErrors.Count == 0)
             throw new InvalidOperationException();
 
         IsSuccess = isSuccess;
         Error = error;
+        Errors = normalizedErrors;
     }
 
-    public static Result Success() => new(true, Error.None);
-    public static Result Failure(Error error) => new(false, error);
+    public static Result Success() => new(true, string.Empty);
+    public static Result Failure(string error) => new(false, error);
+    public static Result Failure(string error, IReadOnlyDictionary<string, string[]> errors) => new(false, error, errors);
 
     public static Result<T> Success<T>(T value) => Result<T>.Success(value);
-    public static Result<T> Failure<T>(Error error) => Result<T>.Failure(error);
+    public static Result<T> Failure<T>(string error) => Result<T>.Failure(error);
+    public static Result<T> Failure<T>(string error, IReadOnlyDictionary<string, string[]> errors) =>
+        Result<T>.Failure(error, errors);
 }
 
 public class Result<T> : Result
@@ -38,32 +48,18 @@ public class Result<T> : Result
         }
     }
 
-    protected Result(T? value, bool isSuccess, Error error) : base(isSuccess, error)
+    protected Result(
+        T? value,
+        bool isSuccess,
+        string error,
+        IReadOnlyDictionary<string, string[]>? errors = null)
+        : base(isSuccess, error, errors)
     {
         _value = value;
     }
 
-    public static Result<T> Success(T value) => new(value, true, Error.None);
-    public new static Result<T> Failure(Error error) => new(default, false, error);
-}
-
-public record Error(string Code, string Message, ErrorType Type = ErrorType.Failure)
-{
-    public static readonly Error None = new(string.Empty, string.Empty, ErrorType.Failure);
-    public static readonly Error NullValue = new("Error.NullValue", "The specified result value is null.", ErrorType.Failure);
-
-    public static Error Failure(string code, string message) => new(code, message, ErrorType.Failure);
-    public static Error NotFound(string code, string message) => new(code, message, ErrorType.NotFound);
-    public static Error Validation(string code, string message) => new(code, message, ErrorType.Validation);
-    public static Error Conflict(string code, string message) => new(code, message, ErrorType.Conflict);
-    public static Error Unauthorized(string code, string message) => new(code, message, ErrorType.Unauthorized);
-}
-
-public enum ErrorType
-{
-    Failure = 0,
-    Validation = 1,
-    NotFound = 2,
-    Conflict = 3,
-    Unauthorized = 4
+    public static Result<T> Success(T value) => new(value, true, string.Empty);
+    public new static Result<T> Failure(string error) => new(default, false, error);
+    public new static Result<T> Failure(string error, IReadOnlyDictionary<string, string[]> errors) =>
+        new(default, false, error, errors);
 }

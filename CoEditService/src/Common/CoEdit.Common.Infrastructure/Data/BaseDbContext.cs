@@ -1,14 +1,19 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using CoEdit.Common.Infrastructure.Outbox;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoEdit.Common.Infrastructure.Data;
 
-public abstract class BaseDbContext(DbContextOptions options, IPublisher publisher) : DbContext(options), IUnitOfWork
+public abstract class BaseDbContext : DbContext, IUnitOfWork
 {
-    private readonly IPublisher _publisher = publisher;
+    protected BaseDbContext(DbContextOptions options) : base(options)
+    {
+    }
 
     public DbSet<OutboxMessage> OutboxMessages { get; set; }
+    public DbSet<OutboxDeadLetter> OutboxDeadLetters { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -19,18 +24,18 @@ public abstract class BaseDbContext(DbContextOptions options, IPublisher publish
         return result;
     }
 
+    [ExcludeFromCodeCoverage(Justification = "EF Core ChangeTracker outbox pattern; tested via integration tests with domain event publishing")]
     private void InsertOutboxMessages()
     {
         var entries = ChangeTracker.Entries<Entity>().ToList();
-        //Serilog here $"Found {entries.Count} entries tracking Entity"
-        
+        // Console.WriteLine($"Found {entries.Count} entries tracking Entity");
+
         var domainEvents = entries
             .Select(entry => entry.Entity)
             .SelectMany(entity =>
             {
-                var domainEvents = entity.DomainEvents;
-                // Console.WriteLine($"Entity {entity.GetType().Name} has {domainEvents.Count} events");
-                // Replace with Serilog here
+                // Snapshot domain events before clearing; otherwise we return an emptied backing list.
+                var domainEvents = entity.DomainEvents.ToList();
                 entity.ClearDomainEvents();
                 return domainEvents;
             })
@@ -38,10 +43,10 @@ public abstract class BaseDbContext(DbContextOptions options, IPublisher publish
 
         var outboxMessages = domainEvents.Select(domainEvent => new OutboxMessage
         {
-            Id = domainEvent.Id,
-            OccurredAt = domainEvent.OccuredOnUtc,
+            Id = domainEvent.EventId,
+            OccurredAt = domainEvent.OccurredOn,
             Type = domainEvent.GetType().Name,
-            Content = JsonSerializer.Serialize(domainEvent, domainEvent.GetType(), (JsonSerializerOptions?)null),
+            Content = JsonSerializer.Serialize(domainEvent, domainEvent.GetType()),
             AssemblyQualifiedName = domainEvent.GetType().AssemblyQualifiedName
         }).ToList();
 
@@ -51,6 +56,7 @@ public abstract class BaseDbContext(DbContextOptions options, IPublisher publish
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new OutboxDeadLetterConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 }

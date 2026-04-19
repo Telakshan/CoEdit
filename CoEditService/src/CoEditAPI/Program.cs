@@ -12,7 +12,7 @@ builder.Services.AddEndpointsApiExplorer();
 //Swagger
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddCollaborationModule(builder.Configuration);
+builder.Services.AddCollaborationInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 

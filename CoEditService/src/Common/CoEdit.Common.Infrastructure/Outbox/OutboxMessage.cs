@@ -1,8 +1,12 @@
-namespace CoEdit.Common.Infrastructure.Messaging;
+using System.Diagnostics.CodeAnalysis;
 
+namespace CoEdit.Common.Infrastructure.Outbox;
+
+[ExcludeFromCodeCoverage(Justification = "EF Core entity with no logic; persistence tested through integration tests")]
 public class OutboxMessage
 {
     public Guid Id { get; set; }
+    public long SequenceNumber { get; set; }
     public string Type { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string? AssemblyQualifiedName { get; set; }

@@ -11,136 +11,357 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Collaboration.Infrastructure.Hubs;
 
-[ExcludeFromCodeCoverage(Justification = "SignalR hub with group management and broadcasting;")]
-public class DocumentHub(
-    ISessionStateService sessionStateService,
-    IOperationalTransform operationTransform,
-    IPublisher publisher,
-    IDistributedLockService lockService)
-    : Hub
+[Authorize]
+public class DocumentHub : Hub
 {
-    public async Task JoinDocument(Guid documentId)
+    private const string SnapshotSyncDeprecatedError =
+        "Snapshot content sync is no longer supported. Clients must use OT SendOperation.";
+
+    private readonly ISessionStateService _sessionService;
+    private readonly IDocumentPersistenceQueue _documentPersistenceQueue;
+    private readonly ICursorBroadcastScheduler _cursorBroadcastScheduler;
+    private readonly IPublisher _publisher;
+    private readonly ISender _sender;
+    private readonly IDocumentAuthorizationService _authorizationService;
+
+    private Result<Guid> GetCurrentUserId()
     {
-        var userIdString = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        Guid userId = Guid.Empty;
-        
-        if (!string.IsNullOrEmpty(userIdString))
+        var userIdString = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdString, out var userId) && userId != Guid.Empty)
         {
-            Guid.TryParse(userIdString, out userId);
+            return Result.Success(userId);
+        }
+        return Result.Failure<Guid>("User identifier claim not found or invalid.");
+    }
+
+    public DocumentHub(
+        ISessionStateService sessionService,
+        IDocumentPersistenceQueue documentPersistenceQueue,
+        ICursorBroadcastScheduler cursorBroadcastScheduler,
+        IPublisher publisher,
+        ISender sender,
+        IDocumentAuthorizationService authorizationService)
+    {
+        _sessionService = sessionService;
+        _documentPersistenceQueue = documentPersistenceQueue;
+        _cursorBroadcastScheduler = cursorBroadcastScheduler;
+        _publisher = publisher;
+        _sender = sender;
+        _authorizationService = authorizationService;
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var affectedDocuments = await _sessionService.RemoveSessionFromAllDocumentsAsync(Context.ConnectionId);
+        var userIdResult = GetCurrentUserId();
+
+        foreach (var documentId in affectedDocuments)
+        {
+            var groupName = documentId.ToString();
+
+            if (userIdResult.IsSuccess)
+            {
+                var userId = userIdResult.Value;
+                await Clients.Group(groupName).SendAsync("UserLeft", new { ConnectionId = Context.ConnectionId, UserId = userId });
+                await _publisher.Publish(new UserLeftDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
+            }
+            else
+            {
+                await Clients.Group(groupName).SendAsync("UserLeft", new { ConnectionId = Context.ConnectionId });
+            }
+
+            await FlushPendingDocumentPersistenceIfIdle(documentId, Context.ConnectionAborted);
         }
 
-        string groupName = documentId.ToString();
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    public async Task JoinDocument(Guid documentId)
+    {
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+        {
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
+        }
+
+        var userId = userIdResult.Value;
+
+        if (!await _authorizationService.CanAccessAsync(userId, documentId, AccessLevel.Viewer))
+        {
+            await Clients.Caller.SendAsync("Error", "You do not have permission to access this document.");
+            return;
+        }
+
+        var groupName = documentId.ToString();
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-        
-        var session = new EditSession(documentId, userId, groupName);
-        await sessionStateService.AddSessionAsync(session);
 
-        await Clients.Group(groupName).SendAsync(
-            "UserJoined",
-            new UserJoinedDto
-            {
-                UserId = userId,
-                DisplayName = session.DisplayName,
-                ConnectionId = session.ConnectionId,
-                JoinedAt = session.JoinedAt
-            });
+        var session = new EditSession(documentId, userId, Context.ConnectionId);
+        await _sessionService.AddSessionAsync(session);
 
-        await publisher.Publish(new UserJoinedDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
+        var currentContent = await _sessionService.GetDocumentContentAsync(documentId) ?? string.Empty;
+        await Clients.Caller.SendAsync("ReceiveContent", ContentSyncEnvelopeCodec.SerializeSnapshot(currentContent));
+        await Clients.Caller.SendAsync("ReceiveVersion", (int)await _sessionService.GetVersionAsync(documentId));
+        await SendTransportModeToCaller();
+
+        await Clients.Group(groupName).SendAsync("UserJoined", new UserJoinedDto
+        {
+            UserId = userId,
+            // ConnectionId isn't in UserJoinedDto currently, but DisplayName/Color are
+            DisplayName = "", // You might want to fetch this
+            JoinedAt = DateTime.UtcNow
+        });
+
+        await _publisher.Publish(new UserJoinedDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
+    }
+
+    public async Task RequestDocumentState(Guid documentId)
+    {
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+        {
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
+        }
+
+        if (!await _authorizationService.CanAccessAsync(userIdResult.Value, documentId, AccessLevel.Viewer))
+        {
+            await Clients.Caller.SendAsync("Error", "You do not have permission to access this document.");
+            return;
+        }
+
+        await SendSnapshotResyncToCaller(documentId);
+        await SendTransportModeToCaller();
     }
 
     public async Task LeaveDocument(Guid documentId)
     {
         var groupName = documentId.ToString();
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-        await sessionStateService.RemoveSessionAsync(documentId, Context.ConnectionId);
-        
-        var userIdString = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        Guid userId = Guid.Empty;
-        
-        if (!string.IsNullOrEmpty(userIdString))
+        await _sessionService.RemoveSessionAsync(documentId, Context.ConnectionId);
+        await FlushPendingDocumentPersistenceIfIdle(documentId, Context.ConnectionAborted);
+
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
         {
-            Guid.TryParse(userIdString, out userId);
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
         }
 
-        await Clients.Group(groupName).SendAsync(
-            "UserLeft",
-            new UserLeftDto 
-                { 
-                    ConnectionId = Context.ConnectionId,
-                    UserId = userId 
-                });
-        
-        await publisher.Publish(new UserLeftDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
+        var userId = userIdResult.Value;
+        await Clients.Group(groupName).SendAsync("UserLeft", new { ConnectionId = Context.ConnectionId, UserId = userId });
+
+        await _publisher.Publish(new UserLeftDocumentIntegrationEvent(userId, documentId, Context.ConnectionId));
     }
-    
+
     public async Task SendOperation(Guid documentId, OperationDto operationDto)
     {
-        IAsyncDisposable? lockHandle = null;
-        for (int i = 0; i < 5; i++)
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
         {
-            lockHandle = await lockService.AcquireLockAsync(documentId.ToString(), TimeSpan.FromSeconds(5));
-            if (lockHandle != null) break;
-            await Task.Delay(50);
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
         }
 
-        if (lockHandle == null)
-            throw new HubException("Could not acquire lock for document operation processing.");
-
-        try
+        if (!await _authorizationService.CanAccessAsync(userIdResult.Value, documentId, AccessLevel.Editor))
         {
-            var currentVersion = await sessionStateService.GetVersionAsync(documentId);
-            var op = operationDto.ToEntity();
+            await Clients.Caller.SendAsync("Error", "You do not have permission to edit this document.");
+            return;
+        }
 
-            if (op.Version <= currentVersion)
+        var commandDto = new OperationDto
+        {
+            DocumentId = documentId,
+            UserId = userIdResult.Value,
+            ClientOperationId = operationDto.ClientOperationId,
+            Type = operationDto.Type,
+            Position = operationDto.Position,
+            Length = operationDto.Length,
+            Content = operationDto.Content,
+            BaseVersion = operationDto.BaseVersion == 0 && operationDto.Version > 0
+                ? operationDto.Version
+                : operationDto.BaseVersion
+        };
+
+        var result = await _sender.Send(new ProcessOperationCommand(commandDto));
+
+        if (result.IsFailure)
+        {
+            var rejectionPayload = OperationRejectionPayloadFactory.Create(documentId, commandDto, result.Error);
+            await Clients.Caller.SendAsync("ReceiveOperationRejected", rejectionPayload);
+            await Clients.Caller.SendAsync("Error", rejectionPayload.Error);
+            if (rejectionPayload.RequiresResync)
             {
-                var missedOps = await sessionStateService.GetOperationsAfterVersionAsync(documentId, op.Version);
-                var transformedOps = operationTransform.TransformAgainstConcurrent(op, missedOps);
-                op = transformedOps.First();
+                await SendSnapshotResyncToCaller(documentId);
             }
-
-            var newVersion = await sessionStateService.IncrementVersionAsync(documentId);
-            op.Version = (int)newVersion;
-
-            await sessionStateService.AddOperationAsync(op);
-
-            await Clients.Group(documentId.ToString()).SendAsync("ReceiveOperation", op);
+            return;
         }
-        finally
+
+        var updatedContent = await _sessionService.GetDocumentContentAsync(documentId);
+        if (updatedContent is not null)
         {
-            if (lockHandle != null)
-                await lockHandle.DisposeAsync();
+            _documentPersistenceQueue.Enqueue(
+                documentId,
+                userIdResult.Value,
+                updatedContent,
+                "DocumentHub.SendOperation");
         }
+
+        await Clients.Caller.SendAsync("ReceiveOperationAck", result.Value);
+        await Clients.OthersInGroup(documentId.ToString()).SendAsync("ReceiveOperation", result.Value);
     }
-    
-    public async Task UpdateCursor(Guid documentId, string displayName, int offset, int? selectionEnd)
+
+    public async Task UpdateCursor(Guid documentId, string displayName, int offset, int? selectionEnd, double? top, double? left, double? height)
     {
-        await Clients.OthersInGroup(documentId.ToString()).SendAsync("CursorMoved", new
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
         {
-            ConnectionId = Context.ConnectionId,
-            DisplayName = displayName,
-            Cursor = new { Position = offset, SelectionEnd = selectionEnd }
-        });
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
+        }
+
+        _cursorBroadcastScheduler.QueueDocumentCursor(
+            documentId,
+            Context.ConnectionId,
+            userIdResult.Value,
+            ResolveCursorDisplayName(displayName),
+            offset,
+            selectionEnd,
+            top,
+            left,
+            height);
     }
-    
-    public async Task SyncContent(Guid documentId, string htmlContent)
+
+    public async Task SyncContent(Guid documentId)
     {
-        await Clients.OthersInGroup(documentId.ToString()).SendAsync("ReceiveContent", htmlContent);
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+        {
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
+        }
+
+        if (!await _authorizationService.CanAccessAsync(userIdResult.Value, documentId, AccessLevel.Editor))
+        {
+            await Clients.Caller.SendAsync("Error", "You do not have permission to edit this document.");
+            return;
+        }
+        await Clients.Caller.SendAsync("Error", SnapshotSyncDeprecatedError);
+        await SendTransportModeToCaller();
+        await SendSnapshotResyncToCaller(documentId);
+    }
+
+    public async Task SyncTitle(Guid documentId, string title)
+    {
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+        {
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
+        }
+
+        if (!await _authorizationService.CanAccessAsync(userIdResult.Value, documentId, AccessLevel.Editor))
+        {
+            await Clients.Caller.SendAsync("Error", "You do not have permission to edit this document.");
+            return;
+        }
+
+        var normalizedTitle = title ?? string.Empty;
+        if (normalizedTitle.Length > 200)
+        {
+            normalizedTitle = normalizedTitle[..200];
+        }
+
+        await Clients.OthersInGroup(documentId.ToString()).SendAsync("TitleUpdated", normalizedTitle);
+    }
+
+    public async Task SaveDocument(Guid documentId)
+    {
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+        {
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
+        }
+
+        if (!await _authorizationService.CanAccessAsync(userIdResult.Value, documentId, AccessLevel.Editor))
+        {
+            await Clients.Caller.SendAsync("Error", "You do not have permission to edit this document.");
+            return;
+        }
+
+        // OT updates are already queued during SendOperation; Save explicitly forces an immediate flush.
+        await _documentPersistenceQueue.FlushDocumentAsync(documentId, Context.ConnectionAborted);
     }
 
     public async Task StartTyping(Guid documentId)
     {
-        var userIdString = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        await Clients.Group(documentId.ToString()).SendAsync("UserTyping", new { UserId = userIdString, IsTyping = true });
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+        {
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
+        }
+
+        await Clients.Group(documentId.ToString()).SendAsync("UserTyping", new { UserId = userIdResult.Value, IsTyping = true });
     }
 
     public async Task StopTyping(Guid documentId)
     {
-        var userIdString = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        await Clients.Group(documentId.ToString()).SendAsync("UserTyping", new { UserId = userIdString, IsTyping = false });
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+        {
+            await Clients.Caller.SendAsync("Error", userIdResult.Error);
+            return;
+        }
+
+        await Clients.Group(documentId.ToString()).SendAsync("UserTyping", new { UserId = userIdResult.Value, IsTyping = false });
     }
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
+    private async Task FlushPendingDocumentPersistenceIfIdle(Guid documentId, CancellationToken cancellationToken = default)
     {
-        await base.OnDisconnectedAsync(exception);
+        var activeSessions = await _sessionService.GetSessionCountAsync(documentId);
+        if (activeSessions == 0)
+        {
+            await _documentPersistenceQueue.FlushDocumentAsync(documentId, cancellationToken);
+        }
     }
+
+    private string ResolveCursorDisplayName(string requestedDisplayName)
+    {
+        // Never trust client-sent identity for authenticated collaboration.
+        var claims = Context.User;
+        var serverIdentity = claims?.FindFirst(ClaimTypes.Name)?.Value
+            ?? claims?.FindFirst("name")?.Value
+            ?? claims?.FindFirst(ClaimTypes.Email)?.Value
+            ?? claims?.FindFirst("email")?.Value;
+
+        var normalizedServerIdentity = serverIdentity?.Trim();
+        if (!string.IsNullOrWhiteSpace(normalizedServerIdentity))
+        {
+            return normalizedServerIdentity;
+        }
+
+        var normalizedRequested = requestedDisplayName?.Trim();
+        if (!string.IsNullOrWhiteSpace(normalizedRequested))
+        {
+            return normalizedRequested;
+        }
+
+        return "User";
+    }
+
+    private async Task SendSnapshotResyncToCaller(Guid documentId)
+    {
+        var latestContent = await _sessionService.GetDocumentContentAsync(documentId) ?? string.Empty;
+        var latestVersion = await _sessionService.GetVersionAsync(documentId);
+        await Clients.Caller.SendAsync("ReceiveContent", ContentSyncEnvelopeCodec.SerializeSnapshot(latestContent));
+        await Clients.Caller.SendAsync("ReceiveVersion", (int)latestVersion);
+    }
+
+    private async Task SendTransportModeToCaller()
+    {
+        await Clients.Caller.SendAsync("ReceiveTransportMode", new { OtEnabled = true });
+    }
+
 }

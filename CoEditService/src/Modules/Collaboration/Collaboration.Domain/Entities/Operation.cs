@@ -1,18 +1,28 @@
+using System.Text.Json.Serialization;
+
 namespace Collaboration.Domain.Entities;
+
+public enum OperationType
+{
+    Insert,
+    Delete,
+    Retain
+}
 
 public class Operation
 {
-    public Guid OperationId { get; set; }
-    public Guid DocumentId { get; set; }
-    public Guid UserId { get; set; }
-    public OperationType Type { get; set; }
-    public int Position { get; set; }
-    public string? Content { get; set; } 
-    public int Length { get; set; } 
-    public long Timestamp { get; set; }
-    public int Version { get; set; }
+    public Guid OperationId { get; init; }
+    public Guid DocumentId { get; init; }
+    public Guid UserId { get; init; }
+    public long Timestamp { get; init; }
 
-    public Operation(Guid documentId, Guid userId, OperationType type, int position, string? content, int version)
+    [JsonInclude] public OperationType Type { get; internal set; }
+    [JsonInclude] public int Position { get; internal set; }
+    [JsonInclude] public string? Content { get; internal set; }
+    [JsonInclude] public int Length { get; internal set; }
+    [JsonInclude] public int Version { get; internal set; }
+
+    public Operation(Guid documentId, Guid userId, OperationType type, int position, string? content, int version, int length = 0)
     {
         OperationId = Guid.NewGuid();
         DocumentId = documentId;
@@ -21,15 +31,16 @@ public class Operation
         Position = position;
         Content = content;
         Version = version;
+        Length = length;
         Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     }
 
+    // Empty constructor for serialization
+    [JsonConstructor]
     public Operation() { }
-}
 
-public enum OperationType
-{
-    Insert,
-    Delete,
-    Retain
+    /// <summary>
+    /// Sets the server-assigned version after OT processing.
+    /// </summary>
+    public void SetVersion(int version) => Version = version;
 }
